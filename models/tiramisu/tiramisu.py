@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from .layers import *
+from models.tiramisu.layers import *
 
 
 class FCDenseNet(nn.Module):

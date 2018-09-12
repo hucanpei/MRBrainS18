@@ -9,6 +9,7 @@ import torch
 from torch.utils import data
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from data_loader.preprocess import readVol,to_uint8,IR_to_uint8,histeq,preprocessed,get_stacked,rotate,calc_crop_region,calc_max_region_list,crop,get_edge
 
@@ -25,9 +26,6 @@ class MR18loader_CV(data.Dataset):
         self.is_histeq=is_histeq
         self.forest=forest
         self.n_classes=11
-        self.T1_classes=9
-        self.IR_classes=2
-        self.T2_classes=2
         # Back: Background
         # GM:   Cortical GM(red), Basal ganglia(green)
         # WM:   WM(yellow), WM lesions(blue)
@@ -100,7 +98,51 @@ class MR18loader_CV(data.Dataset):
                 IR_stack_lists=[crop(stack_list,region_lists[list_index]) for list_index,stack_list in enumerate(IR_stack_lists)]
                 T2_stack_lists=[crop(stack_list,region_lists[list_index]) for list_index,stack_list in enumerate(T2_stack_lists)]
                 lbl_stack_lists=[crop(stack_list,region_lists[list_index]) for list_index,stack_list in enumerate(lbl_stack_lists)]
-
+            '''
+            print('len=',len(T1_stack_lists))
+            T1_path_list=[]
+            IR_path_list=[]
+            T2_path_list=[]
+            lbl_path_list=[]
+            range_list=[]
+            name=['1','4','5','7','14','070','148']
+            f_n=['n','f']
+            ang=['0','5','-5','10','-10','15','-15']
+            save_path='../../../../data/'
+            for sam_i,sample in enumerate(T1_stack_lists):
+                for img_j,img in enumerate(sample):
+                    T1_path_list.append('imgs/'+'T1/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j))
+                    path=save_path+'imgs/'+'T1/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j)
+                    cv.imwrite(path,img)
+            for sam_i,sample in enumerate(IR_stack_lists):
+                for img_j,img in enumerate(sample):
+                    IR_path_list.append('imgs/'+'IR/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j))
+                    path=save_path+'imgs/'+'IR/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j)
+                    cv.imwrite(path,img)
+            for sam_i,sample in enumerate(T2_stack_lists):
+                for img_j,img in enumerate(sample):
+                    T2_path_list.append('imgs/'+'T2/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j))
+                    path=save_path+'imgs/'+'T2/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j)
+                    cv.imwrite(path,img)
+            for sam_i,sample in enumerate(lbl_stack_lists):
+                for img_j,img in enumerate(sample):
+                    lbl_path_list.append('lbls/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j))
+                    path=save_path+'lbls/'+'{}_{}_{}_{}.png'.format(name[sam_i%7],f_n[(int(sam_i/7))%2],ang[int(sam_i/14)],img_j)
+                    print(img.shape)
+                    cv.imwrite(path,img)
+            for sam_i,sample in enumerate(region_lists):
+                for img_j,img in enumerate(sample):
+                    range_list.append(img)
+            range_array=np.array(range_list)
+            y_min_list=range_array[:,0]
+            y_max_list=range_array[:,1]
+            x_min_list=range_array[:,2]
+            x_max_list=range_array[:,3]
+            df=pd.DataFrame({   'T1':T1_path_list,'IR':IR_path_list,'T2':T2_path_list,'lbl':lbl_path_list,
+                                'y_min':y_min_list,'y_max':y_max_list,'x_min':x_min_list,'x_max':x_max_list})
+            print(df)
+            df.to_csv("index.csv")
+            '''
             # get means
             T1mean,IRmean,T2mean=0.0,0.0,0.0
             for samples in T1_stack_lists:
@@ -231,8 +273,8 @@ class MR18loader_CV(data.Dataset):
                 self.T1_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]],\
                 self.IR_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]],\
                 self.T2_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]],\
-                self.lbl_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]],\
-                self.edge_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]]
+                self.lbl_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]]
+                #self.edge_stack_lists[set_index[int(index/48)]][img_index[int(index%48)]]
 
         else:
             img_index=range(len(self.T1_stack_lists))
@@ -241,8 +283,8 @@ class MR18loader_CV(data.Dataset):
                 self.T1_stack_lists[img_index[int(index)]], \
                 self.IR_stack_lists[img_index[int(index)]], \
                 self.T2_stack_lists[img_index[int(index)]], \
-                self.lbl_stack_lists[img_index[int(index)]],\
-                self.edge_stack_lists[img_index[int(index)]]
+                self.lbl_stack_lists[img_index[int(index)]]
+                #self.edge_stack_lists[img_index[int(index)]]
 
     
     
@@ -271,7 +313,7 @@ class MR18loader_CV(data.Dataset):
 
 if __name__=='__main__':
     path='../../../../data/'
-    MRloader=MR18loader_CV(root=path,val_num=5,is_val=False,is_transform=True,is_rotate=True,is_crop=True,is_histeq=True,forest=3)
+    MRloader=MR18loader_CV(root=path,val_num=7,is_val=False,is_transform=True,is_flip=True,is_rotate=True,is_crop=True,is_histeq=True,forest=3)
     loader=data.DataLoader(MRloader, batch_size=1, num_workers=1, shuffle=True)
     for i,(regions,T1s,IRs,T2s,lbls) in enumerate(MRloader):
         print(i)

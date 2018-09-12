@@ -1,6 +1,16 @@
 import torch
 import torch.nn as nn
 import math
+from torch.autograd import Variable
+import torch.utils.model_zoo as model_zoo
+
+model_urls = {
+    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
+    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+}
 
 #--modified from
 # https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
@@ -93,7 +103,7 @@ class ResNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)
+        #x = self.maxpool(x)
         C1 = x 
         x = self.layer1(x)
         C2 = x
@@ -105,10 +115,71 @@ class ResNet(nn.Module):
         C5 = x
         return C1, C2, C3, C4, C5
 
-def resnet50():
-    """Constructs a ResNet-101 model.
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-    """
+
+def resnet50(pretrained=True):
     model = ResNet(Bottleneck, [3, 4, 6, 3])
+    if pretrained==True:
+        state_dict=model_zoo.load_url(model_urls['resnet50'])
+        del state_dict['fc.weight']
+        del state_dict['fc.bias']
+        model.load_state_dict(state_dict)
     return model
+
+def resnet101(pretrained=True):
+    model = ResNet(Bottleneck, [3, 4, 23, 3])
+    if pretrained==True:
+        state_dict=model_zoo.load_url(model_urls['resnet101'])
+        del state_dict['fc.weight']
+        del state_dict['fc.bias']
+        model.load_state_dict(state_dict)
+    return model
+
+def resnet152(pretrained=True):
+    model = ResNet(Bottleneck, [3, 8, 36, 3])
+    if pretrained==True:
+        state_dict=model_zoo.load_url(model_urls['resnet152'])
+        del state_dict['fc.weight']
+        del state_dict['fc.bias']
+        model.load_state_dict(state_dict)
+    return model
+
+class FCN_res(nn.Module):
+    def __init__(self,n_classes=11,pretrained=True):
+        super(FCN_res,self).__init__()
+        self.n_classes=n_classes
+        self.res=resnet152(pretrained=True)
+        self.conv1_16=nn.Conv2d(64,  64, 3, padding=1)
+        self.conv2_16=nn.Conv2d(256, 64, 3, padding=1)
+        self.conv3_16=nn.Conv2d(512, 64, 3, padding=1)
+        self.conv4_16=nn.Conv2d(1024, 64, 3, padding=1)
+        self.conv5_16=nn.Conv2d(2048, 64, 3, padding=1)
+
+        self.up_conv1_16 = nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2)
+        self.up_conv2_16 = nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2)
+        self.up_conv3_16 = nn.ConvTranspose2d(64, 64, kernel_size=4, stride=4)
+        self.up_conv4_16 = nn.ConvTranspose2d(64, 64, kernel_size=8, stride=8)
+        self.up_conv5_16 = nn.ConvTranspose2d(64, 64, kernel_size=16, stride=16)
+
+        self.score=nn.Sequential(
+            nn.Conv2d(5*64,self.n_classes,1),
+            #nn.Dropout(0.5),
+            )
+    def forward(self,x):
+        C1,C2,C3,C4,C5=self.res(x)
+
+        up_conv1_16=self.up_conv1_16(self.conv1_16(C1))
+        up_conv2_16=self.up_conv2_16(self.conv2_16(C2))
+        up_conv3_16=self.up_conv3_16(self.conv3_16(C3))
+        up_conv4_16=self.up_conv4_16(self.conv4_16(C4))
+        up_conv5_16=self.up_conv5_16(self.conv5_16(C5))
+
+        concat_1_to_5=torch.cat([up_conv1_16,up_conv2_16,up_conv3_16,up_conv4_16,up_conv5_16], 1)
+        score=self.score(concat_1_to_5)
+        return score
+        
+if __name__=='__main__':
+    model=FCN_res()
+    x=Variable(torch.zeros([1,3,48,48]).float())
+    print(x.shape)
+    y=model(x)
+    print(y.shape)

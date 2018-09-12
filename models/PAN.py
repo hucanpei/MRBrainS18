@@ -57,10 +57,15 @@ class VGG16(nn.Module):
 class FPN(nn.Module):
     def __init__(self):
         super(FPN, self).__init__()
-        self.C5_conv = nn.Conv2d(in_channels=512, out_channels=LAYER_THICK, kernel_size=1, bias=False)
-        self.C4_conv = nn.Conv2d(in_channels=512, out_channels=LAYER_THICK, kernel_size=1, bias=False)
-        self.C3_conv = nn.Conv2d(in_channels=256, out_channels=LAYER_THICK, kernel_size=1, bias=False)
-        self.C2_conv = nn.Conv2d(in_channels=128, out_channels=LAYER_THICK, kernel_size=1, bias=False)        
+        #self.C5_conv = nn.Conv2d(in_channels=512, out_channels=LAYER_THICK, kernel_size=1, bias=False)
+        #self.C4_conv = nn.Conv2d(in_channels=512, out_channels=LAYER_THICK, kernel_size=1, bias=False)
+        #self.C3_conv = nn.Conv2d(in_channels=256, out_channels=LAYER_THICK, kernel_size=1, bias=False)
+        #self.C2_conv = nn.Conv2d(in_channels=128, out_channels=LAYER_THICK, kernel_size=1, bias=False)        
+        
+        self.C5_conv = nn.Conv2d(in_channels=2048, out_channels=LAYER_THICK, kernel_size=1, bias=False)
+        self.C4_conv = nn.Conv2d(in_channels=1024, out_channels=LAYER_THICK, kernel_size=1, bias=False)
+        self.C3_conv = nn.Conv2d(in_channels=512, out_channels=LAYER_THICK, kernel_size=1, bias=False)
+        self.C2_conv = nn.Conv2d(in_channels=256, out_channels=LAYER_THICK, kernel_size=1, bias=False)        
 
         #config = "in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1, bias=False"
         #self.P2_conv = nn.Conv2d(*config)
@@ -120,9 +125,10 @@ class generateN(nn.Module):
 class PAN(nn.Module):
     def __init__(self, training=False):
         super(PAN, self).__init__()
-        self.vgg = VGG16()
-        vgg16=models.vgg16(pretrained=True)
-        self.vgg.init_vgg16_params(vgg16)
+        #self.vgg = VGG16()
+        #vgg16=models.vgg16(pretrained=True)
+        #self.vgg.init_vgg16_params(vgg16)
+        self.res=resnet50()
         self.fpn = FPN()
         self.generateN = generateN()
         self.training = training
@@ -131,7 +137,8 @@ class PAN(nn.Module):
         """
         x : input image
         """ 
-        C1, C2, C3, C4, C5 = self.vgg(x)
+        #C1, C2, C3, C4, C5 = self.vgg(x)
+        C1, C2, C3, C4, C5 = self.res(x)
         P2, P3, P4, P5 = self.fpn([C1, C2, C3, C4, C5]) 
         N2, N3, N4, N5 = self.generateN([P2, P3, P4, P5])
         return N2,N3,N4,N5
@@ -160,11 +167,10 @@ class PAN_seg(nn.Module):
         return score
 
 if __name__ == '__main__':
-    x=torch.Tensor(4,3,240,240)
+    x=torch.Tensor(4,3,16,16)
     x=Variable(x)
     print(x.shape)
     model=PAN_seg()
     y=model(x)
     print(y.shape)
-    
 

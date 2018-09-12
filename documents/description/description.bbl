@@ -1,0 +1,17 @@
+\begin{thebibliography}{1}
+
+\bibitem{Xie2016Holistically}
+Saining Xie and Zhuowen Tu.
+\newblock Holistically-nested edge detection.
+\newblock In {\em IEEE International Conference on Computer Vision}, pages
+  3--18, 2016.
+
+\bibitem{xu2017neonatal}
+Yongchao Xu, Thierry G{\'e}raud, Isabelle Bloch, and T{\'e}l{\'e}com~ParisTech
+  LTCI.
+\newblock From neonatal to adult brain mr image segmentation in a few seconds
+  using 3d-like fully convolutional network and transfer learning.
+\newblock In {\em Proceedings of the 23rd IEEE International Conference on
+  Image Processing (ICIP), Beijing, China}, pages 4417--4421, 2017.
+
+\end{thebibliography}

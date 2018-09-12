@@ -1,3 +1,4 @@
+
 # MRBrainS18
 This code is written to participate in the [MRBrainS18](http://mrbrains18.isi.uu.nl/) competition.
 
@@ -22,11 +23,9 @@ Simply pass image in 3 modalities through 3 streams of VGG, and concat them in e
 ![pipeline](fig/pipeline.png)
 
 ## Run
-Extract data into '/home/canpi/MRBrainS18/data/', or modify the path in line 44 in file 'train.py', 
-then run:
 
 ```
-python ./train.py --gpu_id=0 --val_num=1
+python ./train.py --gpu_id=0 --data_path='path' --val_num=1 
 ```
 
 The meaning of this line of code is running this code with GPU 0 and validating with sample 1.
@@ -38,21 +37,24 @@ folder 'data\_loader' includes preprocess code and dataloader.
 
 folder 'models' includes some networks. 
 
-folder 'fig\_out' storages visualized results and train curve, in png foramt. 
-
 'loss.py' defines sone loss functions. 
 
 'metrics.py' computes dice coefficients. 
 
 'validate.py' generates '.nii.gz' file for validation set. 
 
+'test.py' is an independent file to generate '.nii.gz' file for test sample. 
+
+folder 'fig\_out' storages visualized results and train curve, in png foramt. 
+
 'evaluation.py' is modified from [official code](https://github.com/hjkuijf/MRBrainS18/blob/master/evaluation.py) to compute metrics. 
 	
 folder 'evaluation' storages output '.nii.gz' and label '.nii.gz' for computing metrics. 
 
-'test.py' is an independent file to generate '.nii.gz' file for test sample. 
-
 folder 'docker' is used to containerize test code. 
 
+folder 'documents' contains poster,slides,description and results for extension of icip paper.
+
+
 ## Visualization
-![visualization](fig/val_1_out_37.png)
+![visualization](fig/val_1_out_114.png)

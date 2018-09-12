@@ -21,31 +21,27 @@ from data_loader.data_loader_18 import MR18loader_CV
 from metrics import runningScore
 from loss import cross_entropy2d,loss_ce_t,  weighted_loss,  dice_loss,dice_coeff,  bce2d_hed
 
-#from models.fcn_xu import fcn_xu,fcn_nopool,fcn_xu_dilated,fcn_rcf,fcn_dense
-#from models.coord_fcn import coord_fcn
-#from models.fcn_hed import fcn_hed
-#from models.unet import unet
-#from models.segnet import segnet
-#from models.densenet import DenseNet,DenseNetSeg
-#from models.PAN import PAN_seg
-#from models.tiramisu import tiramisu
-#from models.inception import incep_FCN
-#from data_loader.data_loader_13 import MR13loader_CV
+from models.fcn_xu import fcn_xu,fcn_xu_19,fcn_nopool,fcn_xu_dilated
+from models.unet import unet
+from models.PAN import PAN_seg
+from models.resnet import FCN_res
 
+from models.segnet import segnet
+from models.densenet import DenseNet,DenseNetSeg
+from models.tiramisu import tiramisu
 
 def adjust_learning_rate(optimizer, epoch):
-    lr = args.lr * (0.1 ** (epoch // 10))
+    lr = args.lr * (0.1 ** (epoch // 5))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
 def train(args):
     os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu_id)
     #torch.manual_seed(1337)
-    data_path='/home/canpi/MRBrainS18/data/'
     print(args)
     # setup dataloader
-    t_loader=MR18loader_CV(root=data_path,val_num=args.val_num,is_val=False,is_transform=True,is_flip=True,is_rotate=True,is_crop=True,is_histeq=True,forest=args.num_forest)
-    v_loader=MR18loader_CV(root=data_path,val_num=args.val_num,is_val=True,is_transform=True,is_flip=False,is_rotate=False,is_crop=True,is_histeq=True,forest=args.num_forest)
+    t_loader=MR18loader_CV(root=args.data_path,val_num=args.val_num,is_val=False,is_transform=True,is_flip=True,is_rotate=True,is_crop=True,is_histeq=True,forest=args.num_forest)
+    v_loader=MR18loader_CV(root=args.data_path,val_num=args.val_num,is_val=True,is_transform=True,is_flip=False,is_rotate=False,is_crop=True,is_histeq=True,forest=args.num_forest)
     n_classes = t_loader.n_classes
     trainloader = data.DataLoader(t_loader, batch_size=args.batch_size, num_workers=1, shuffle=True)
     valloader = data.DataLoader(v_loader, batch_size=1, num_workers=1,shuffle=True)
@@ -94,7 +90,7 @@ def train(args):
         #loss_sum=0.0
         loss_epoch=0.0
         t_epoch=time.time()
-        for i_train, (regions,T1s,IRs,T2s,lbls,edges) in enumerate(trainloader):
+        for i_train, (regions,T1s,IRs,T2s,lbls) in enumerate(trainloader):
             T1s=Variable(T1s.cuda())
             IRs,T2s=Variable(IRs.cuda()),Variable(T2s.cuda())
             lbls=Variable(lbls.cuda()[:,int(args.num_forest/2),:,:].unsqueeze(1))
@@ -158,7 +154,7 @@ def train(args):
         print('cost {} seconds in this train epoch'.format(t_train-t_epoch))
 
         model.eval()
-        for i_val, (regions_val,T1s_val,IRs_val,T2s_val,lbls_val,edges_val) in enumerate(valloader):
+        for i_val, (regions_val,T1s_val,IRs_val,T2s_val,lbls_val) in enumerate(valloader):
             T1s_val=Variable(T1s_val.cuda())
             IRs_val,T2s_val=Variable(IRs_val.cuda()),Variable(T2s_val.cuda())
             with torch.no_grad():
@@ -269,19 +265,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Hyperparams')
     parser.add_argument('--gpu_id', nargs='?', type=int, default=-1,
                         help='GPU id, -1 for cpu')
-    parser.add_argument('--n_epoch', nargs='?', type=int, default=100,
+    parser.add_argument('--data_path', nargs='?', type=str, default='/home/canpi/canpi/MRBrainS18/data/',
+                        help='dataset path')
+    parser.add_argument('--val_num', nargs='?', type=int, default=1,
+                        help='which set is left for validation')
+    
+    parser.add_argument('--n_epoch', nargs='?', type=int, default=20,
                         help='# of the epochs')
     parser.add_argument('--batch_size', nargs='?', type=int, default=1,
                         help='Batch Size')
-    parser.add_argument('--loss_avg', nargs='?', type=int, default=1,
-                        help='loss average')
     parser.add_argument('--num_forest', nargs='?', type=int, default=3,
-                        help='number of forest')
+                        help='number of stacked slice')
+    #parser.add_argument('--loss_avg', nargs='?', type=int, default=1,
+    #                    help='loss average')
     parser.add_argument('--lr', nargs='?', type=float, default=1e-3,
                         help='Learning Rate')
     parser.add_argument('--resume', nargs='?', type=str, default=None,
                         help='Path to previous saved model to restart from')
-    parser.add_argument('--val_num', nargs='?', type=int, default=1,
-                        help='which set is left for validation')
     args = parser.parse_args()
     train(args)
